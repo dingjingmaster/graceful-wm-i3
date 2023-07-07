@@ -53,7 +53,8 @@ char *sstrndup(const char *str, size_t size) {
     return result;
 }
 
-int sasprintf(char **strp, const char *fmt, ...) {
+int sasprintf(char **strp, const char *fmt, ...)
+{
     va_list args;
     int result;
 

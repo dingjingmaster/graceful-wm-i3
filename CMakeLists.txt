@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(graceful-xf-wm LANGUAGES C CXX)
+project(graceful-wm LANGUAGES C CXX)
 
 set(PROJECT_VERSION_MAJOR 0)
 set(PROJECT_VERSION_MINOR 0)
@@ -45,7 +45,11 @@ MESSAGE("")
 add_definitions(-w -g
         -D I3_VERSION=\\"${PACKAGE_VERSION}\\"
         -D APP_NAME=\\"graceful-wm\\"
+        -D INSTALL_DIR=\\"/usr/local/\\"
         -D APP_VERSION=\\"${PACKAGE_VERSION}\\"
         )
 
+include_directories(${CMAKE_SOURCE_DIR})
+
+add_subdirectory(wm)
 add_subdirectory(app)

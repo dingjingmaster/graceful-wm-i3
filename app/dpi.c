@@ -23,7 +23,8 @@ static long init_dpi_fallback(void) {
  * This will use the 'Xft.dpi' X resource if available and fall back to
  * guessing the correct value otherwise.
  */
-void init_dpi(void) {
+void init_dpi(void)
+{
     xcb_xrm_database_t *database = NULL;
     char *resource = NULL;
 

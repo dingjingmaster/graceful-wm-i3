@@ -1,4 +1,4 @@
-file(GLOB MAIN_SRC
+file(GLOB MAIN_SRC_1
         ${CMAKE_SOURCE_DIR}/app/x.h
         ${CMAKE_SOURCE_DIR}/app/x.c
 
@@ -155,8 +155,8 @@ file(GLOB MAIN_SRC
         )
 
 
-add_executable(graceful-wm main.c ${MAIN_SRC})
-target_include_directories(graceful-wm PUBLIC
+add_executable(graceful-wm-1 main.c ${MAIN_SRC_1})
+target_include_directories(graceful-wm-1 PUBLIC
         ${SN_INCLUDE_DIRS}
         ${GIO_INCLUDE_DIRS}
         ${XCB_INCLUDE_DIRS}
@@ -165,7 +165,7 @@ target_include_directories(graceful-wm PUBLIC
         ${PCRE_INCLUDE_DIRS}
         ${PANGO_INCLUDE_DIRS}
         ${CAIRO_INCLUDE_DIRS})
-target_link_libraries(graceful-wm
+target_link_libraries(graceful-wm-1
         -lm -lrt -lev
         ${SN_LIBRARIES}
         ${GIO_LIBRARIES}
