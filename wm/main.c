@@ -5,6 +5,7 @@
 #include <ev.h>
 #include <glib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <xcb/xkb.h>
 #include <xcb/shape.h>
 #include <xcb/randr.h>
@@ -13,14 +14,19 @@
 #include <xcb/xcb_aux.h>
 #include <sys/resource.h>
 #include <xcb/xcb_atom.h>
-#include <unistd.h>
+#include <xcb/xcb_keysyms.h>
 
 #include "xkb.h"
+#include "ewmh.h"
 #include "utils.h"
 #include "config.h"
 #include "xcursor.h"
+#include "handlers.h"
+#include "bindings.h"
+#include "sd-daemon.h"
 #include "common/log.h"
 #include "command-line.h"
+#include "get-mod-mask.h"
 #include "restore-layout.h"
 #include "atoms-rest.xmacro.h"
 #include "atoms-NET-SUPPORTED-xmacro.h"
@@ -48,7 +54,7 @@ int main (int argc, char* argv[])
         exit (-1);
     }
 
-    gSndisplay = sn_xcb_display_new (gConn, NULL, NULL);
+    gSnDisplay = sn_xcb_display_new (gConn, NULL, NULL);
 
     gMainLoop = EV_DEFAULT;
     if (NULL == gMainLoop) {
@@ -157,7 +163,7 @@ int main (int argc, char* argv[])
         free(atomReply);
 
         /* Check if the selection is already owned */
-        xcb_get_selection_owner_reply_t* selectionReply = xcb_get_selection_owner_reply(gConn, xcb_get_selection_owner(gConn, gWMSn), NULL);
+        xcb_get_selection_owner_reply_t* selectionReply = xcb_get_selection_owner_reply (gConn, xcb_get_selection_owner(gConn, gWMSn), NULL);
         if (selectionReply && selectionReply->owner != XCB_NONE && !gReplaceWM) {
             LOG_ERROR("Another window manager is already running (WM_Sn is owned)");
             return 1;
@@ -321,26 +327,27 @@ int main (int argc, char* argv[])
     }
 
 
-    restore_connect();
-
-    property_handlers_init();
+    restore_connect ();
+    property_handlers_init ();
 
     ewmh_setup_hints();
 
-    keysyms = xcb_key_symbols_alloc(conn);
+    gKeySyms = xcb_key_symbols_alloc(gConn);
 
-    xcb_numlock_mask = aio_get_mod_mask_for(XCB_NUM_LOCK, keysyms);
+    gXcbNumLockMask = aio_get_mod_mask_for(XCB_NUM_LOCK, gKeySyms);
 
     if (!load_keymap()) {
-        die("Could not load keymap\n");
+        ERROR("Could not load keymap\n");
+        exit (-1);
     }
 
     translate_keysyms();
-    grab_all_keys(conn);
+    grab_all_keys(gConn);
 
     bool needs_tree_init = true;
+#if 0
     if (layout_path != NULL) {
-        LOG("Trying to restore the layout from \"%s\".\n", layout_path);
+        DEBUG ("Trying to restore the layout from \"%s\".\n", layout_path);
         needs_tree_init = !tree_restore(layout_path, greply);
         if (delete_layout_path) {
             unlink(layout_path);
@@ -350,6 +357,7 @@ int main (int argc, char* argv[])
             rmdir(dir);
         }
     }
+#endif
     if (needs_tree_init) {
         tree_init(greply);
     }
@@ -357,6 +365,7 @@ int main (int argc, char* argv[])
     free(greply);
 
     /* Setup fake outputs for testing */
+#if 0
     if (fake_outputs == NULL && config.fake_outputs != NULL) {
         fake_outputs = config.fake_outputs;
     }
@@ -372,8 +381,10 @@ int main (int argc, char* argv[])
          * file or on command-line */
         xinerama_init();
     }
-    else {
-        DLOG("Checking for XRandR...\n");
+    else
+#endif
+    {
+        DEBUG("Checking for XRandR...\n");
         randr_init(&randr_base, disable_randr15 || config.disable_randr15);
     }
 
@@ -408,14 +419,14 @@ int main (int argc, char* argv[])
 
     xcb_query_pointer_reply_t *pointerreply;
     Output *output = NULL;
-    if (!(pointerreply = xcb_query_pointer_reply(conn, pointercookie, NULL))) {
-        ELOG("Could not query pointer position, using first screen\n");
+    if (!(pointerreply = xcb_query_pointer_reply(gConn, pointercookie, NULL))) {
+        DEBUG("Could not query pointer position, using first screen\n");
     }
     else {
-        DLOG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
+        DEBUG("Pointer at %d, %d\n", pointerreply->root_x, pointerreply->root_y);
         output = get_output_containing(pointerreply->root_x, pointerreply->root_y);
         if (!output) {
-            ELOG("ERROR: No screen at (%d, %d), starting on the first screen\n",
+            ERROR("ERROR: No screen at (%d, %d), starting on the first screen",
                  pointerreply->root_x, pointerreply->root_y);
         }
     }
@@ -430,19 +441,19 @@ int main (int argc, char* argv[])
     /* Listen to the IPC socket for clients */
     struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
     ev_io_init(ipc_io, ipc_new_client, ipc_socket, EV_READ);
-    ev_io_start(main_loop, ipc_io);
+    ev_io_start(gMainLoop, ipc_io);
 
     /* Chose a file name in /tmp/ based on the PID */
     char *log_stream_socket_path = get_process_filename("log-stream-socket");
     int log_socket = create_socket(log_stream_socket_path, &current_log_stream_socket_path);
     free(log_stream_socket_path);
     if (log_socket == -1) {
-        ELOG("Could not create the log socket, i3-dump-log -f will not work\n");
+        DEBUG("Could not create the log socket, i3-dump-log -f will not work\n");
     }
     else {
         struct ev_io *log_io = scalloc(1, sizeof(struct ev_io));
         ev_io_init(log_io, log_new_client, log_socket, EV_READ);
-        ev_io_start(main_loop, log_io);
+        ev_io_start(gMainLoop, log_io);
     }
 
     /* Also handle the UNIX domain sockets passed via socket
@@ -450,35 +461,35 @@ int main (int argc, char* argv[])
      * environment variables", we need to be able to reexec. */
     listen_fds = sd_listen_fds(0);
     if (listen_fds < 0) {
-        ELOG("socket activation: Error in sd_listen_fds\n");
+        DEBUG("socket activation: Error in sd_listen_fds");
     }
     else if (listen_fds == 0) {
-        DLOG("socket activation: no sockets passed\n");
+        DEBUG("socket activation: no sockets passed");
     }
     else {
         int flags;
         for (int fd = SD_LISTEN_FDS_START; fd < (SD_LISTEN_FDS_START + listen_fds); fd++) {
-            DLOG("socket activation: also listening on fd %d\n", fd);
+            DEBUG("socket activation: also listening on fd %d\n", fd);
 
             /* sd_listen_fds() enables FD_CLOEXEC by default.
              * However, we need to keep the file descriptors open for in-place
              * restarting, therefore we explicitly disable FD_CLOEXEC. */
             if ((flags = fcntl(fd, F_GETFD)) < 0 ||
                 fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC) < 0) {
-                ELOG("Could not disable FD_CLOEXEC on fd %d\n", fd);
+                ERROR("Could not disable FD_CLOEXEC on fd %d\n", fd);
             }
 
             struct ev_io *ipc_io = scalloc(1, sizeof(struct ev_io));
             ev_io_init(ipc_io, ipc_new_client, fd, EV_READ);
-            ev_io_start(main_loop, ipc_io);
+            ev_io_start(gMainLoop, ipc_io);
         }
     }
 
     {
         const int restart_fd = parse_restart_fd();
         if (restart_fd != -1) {
-            DLOG("serving restart fd %d", restart_fd);
-            ipc_client *client = ipc_new_client_on_fd(main_loop, restart_fd);
+            DEBUG("serving restart fd %d", restart_fd);
+            ipc_client *client = ipc_new_client_on_fd(gMainLoop, restart_fd);
             ipc_confirm_restart(client);
             unsetenv("_I3_RESTART_FD");
         }
@@ -495,13 +506,13 @@ int main (int argc, char* argv[])
     struct ev_io *xcb_watcher = scalloc(1, sizeof(struct ev_io));
     xcb_prepare = scalloc(1, sizeof(struct ev_prepare));
 
-    ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(conn), EV_READ);
-    ev_io_start(main_loop, xcb_watcher);
+    ev_io_init(xcb_watcher, xcb_got_event, xcb_get_file_descriptor(gConn), EV_READ);
+    ev_io_start(gMainLoop, xcb_watcher);
 
     ev_prepare_init(xcb_prepare, xcb_prepare_cb);
-    ev_prepare_start(main_loop, xcb_prepare);
+    ev_prepare_start(gMainLoop, xcb_prepare);
 
-    xcb_flush(conn);
+    xcb_flush(gConn);
 
     /* What follows is a fugly consequence of X11 protocol race conditions like
      * the following: In an i3 in-place restart, i3 will reparent all windows
@@ -516,11 +527,11 @@ int main (int argc, char* argv[])
      * connections), then discard all pending events (since we didn’t do
      * anything, there cannot be any meaningful responses), then ungrab the
      * server. */
-    xcb_grab_server(conn);
+    xcb_grab_server(gConn);
     {
-        xcb_aux_sync(conn);
+        xcb_aux_sync(gConn);
         xcb_generic_event_t *event;
-        while ((event = xcb_poll_for_event(conn)) != NULL) {
+        while ((event = xcb_poll_for_event(gConn)) != NULL) {
             if (event->response_type == 0) {
                 free(event);
                 continue;
@@ -537,11 +548,11 @@ int main (int argc, char* argv[])
 
             free(event);
         }
-        manage_existing_windows(root);
+        manage_existing_windows(gRoot);
     }
-    xcb_ungrab_server(conn);
+    xcb_ungrab_server(gConn);
 
-    if (autostart) {
+    if (gAutoStart) {
         /* When the root's window background is set to NONE, that might mean
          * that old content stays visible when a window is closed. That has
          * unpleasant effect of "my terminal (does not seem to) close!".
@@ -550,14 +561,15 @@ int main (int argc, char* argv[])
          * we test for it: Open & close a window and check if the background is
          * redrawn or the window contents stay visible.
          */
-        LOG("This is not an in-place restart, checking if a wallpaper is set.\n");
+        DEBUG ("This is not an in-place restart, checking if a wallpaper is set.\n");
 
-        xcb_screen_t *root = xcb_aux_get_screen(conn, conn_screen);
-        if (is_background_set(conn, root)) {
-            LOG("A wallpaper is set, so no screenshot is necessary.\n");
-        } else {
-            LOG("No wallpaper set, copying root window contents to a pixmap\n");
-            set_screenshot_as_wallpaper(conn, root);
+        xcb_screen_t *root = xcb_aux_get_screen(gConn, gConnScreen);
+        if (is_background_set(gConn, root)) {
+            DEBUG ("A wallpaper is set, so no screenshot is necessary.\n");
+        }
+        else {
+            DEBUG("No wallpaper set, copying root window contents to a pixmap\n");
+            set_screenshot_as_wallpaper(gConn, root);
         }
     }
 
@@ -581,7 +593,7 @@ int main (int argc, char* argv[])
             sigaction(SIGABRT, &action, NULL) == -1 ||
             sigaction(SIGFPE, &action, NULL) == -1 ||
             sigaction(SIGSEGV, &action, NULL) == -1)
-            ELOG("Could not setup signal handler.\n");
+            ERROR("Could not setup signal handler.\n");
     }
 
     setup_term_handlers();
@@ -590,15 +602,15 @@ int main (int argc, char* argv[])
     signal(SIGPIPE, SIG_IGN);
 
     /* Autostarting exec-lines */
-    if (autostart) {
-        while (!TAILQ_EMPTY(&autostarts)) {
-            struct Autostart *exec = TAILQ_FIRST(&autostarts);
+    if (gAutoStart) {
+        while (!TAILQ_EMPTY(&gAutoStarts)) {
+            struct Autostart *exec = TAILQ_FIRST(&gAutoStarts);
 
-            LOG("auto-starting %s\n", exec->command);
+            DEBUG("auto-starting %s\n", exec->command);
             start_application(exec->command, exec->no_startup_id);
 
             FREE(exec->command);
-            TAILQ_REMOVE(&autostarts, exec, autostarts);
+            TAILQ_REMOVE(&gAutoStarts, exec, autostarts);
             FREE(exec);
         }
     }
@@ -607,7 +619,7 @@ int main (int argc, char* argv[])
     while (!TAILQ_EMPTY(&autostarts_always)) {
         struct Autostart *exec_always = TAILQ_FIRST(&autostarts_always);
 
-        LOG("auto-starting (always!) %s\n", exec_always->command);
+        DEBUG("auto-starting (always!) %s\n", exec_always->command);
         start_application(exec_always->command, exec_always->no_startup_id);
 
         FREE(exec_always->command);
@@ -623,7 +635,7 @@ int main (int argc, char* argv[])
                   barconfig->i3bar_command ? barconfig->i3bar_command : "exec i3bar",
                   barconfig->verbose ? "-V" : "",
                   barconfig->id, current_socketpath);
-        LOG("Starting bar process: %s\n", command);
+        DEBUG("Starting bar process: %s\n", command);
         start_application(command, true);
         free(command);
     }

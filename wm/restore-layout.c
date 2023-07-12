@@ -133,6 +133,7 @@ void restore_connect(void)
 
 static void update_placeholder_contents(placeholder_state *state)
 {
+#if 0
     const color_t foreground = config.client.placeholder.text;
     const color_t background = config.client.placeholder.background;
 
@@ -185,10 +186,12 @@ static void update_placeholder_contents(placeholder_state *state)
     draw_util_text(line, &(state->surface), foreground, background, x, y, text_width);
     i3string_free(line);
     xcb_aux_sync(restore_conn);
+#endif
 }
 
 static void open_placeholder_window(Con *con)
 {
+#if 0
     if (con_is_leaf(con) &&
         (con->window == NULL || con->window->id == XCB_NONE) &&
         !TAILQ_EMPTY(&(con->swallow_head)) &&
@@ -244,6 +247,7 @@ static void open_placeholder_window(Con *con)
     TAILQ_FOREACH (child, &(con->floating_head), floating_windows) {
         open_placeholder_window(child);
     }
+#endif
 }
 
 /*

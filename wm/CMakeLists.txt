@@ -3,11 +3,23 @@ include(${CMAKE_SOURCE_DIR}/common/common.cmake)
 file(GLOB MAIN_SRC
         ${CMAKE_SOURCE_DIR}/wm/types.h
 
+        ${CMAKE_SOURCE_DIR}/wm/x.h
+        ${CMAKE_SOURCE_DIR}/wm/x.c
+
         ${CMAKE_SOURCE_DIR}/wm/xkb.h
         ${CMAKE_SOURCE_DIR}/wm/xkb.c
 
+        ${CMAKE_SOURCE_DIR}/wm/con.h
+        ${CMAKE_SOURCE_DIR}/wm/con.c
+
         ${CMAKE_SOURCE_DIR}/wm/data.h
         ${CMAKE_SOURCE_DIR}/wm/data.c
+
+        ${CMAKE_SOURCE_DIR}/wm/ewmh.h
+        ${CMAKE_SOURCE_DIR}/wm/ewmh.c
+
+        ${CMAKE_SOURCE_DIR}/wm/tree.h
+        ${CMAKE_SOURCE_DIR}/wm/tree.c
 
         ${CMAKE_SOURCE_DIR}/wm/utils.h
         ${CMAKE_SOURCE_DIR}/wm/utils.c
@@ -24,11 +36,23 @@ file(GLOB MAIN_SRC
         ${CMAKE_SOURCE_DIR}/wm/xcursor.h
         ${CMAKE_SOURCE_DIR}/wm/xcursor.c
 
+        ${CMAKE_SOURCE_DIR}/wm/handlers.h
+        ${CMAKE_SOURCE_DIR}/wm/handlers.c
+
+        ${CMAKE_SOURCE_DIR}/wm/bindings.h
+        ${CMAKE_SOURCE_DIR}/wm/bindings.c
+
+        ${CMAKE_SOURCE_DIR}/wm/sd-daemon.h
+        ${CMAKE_SOURCE_DIR}/wm/sd-daemon.c
+
         ${CMAKE_SOURCE_DIR}/wm/draw-utils.h
         ${CMAKE_SOURCE_DIR}/wm/draw-utils.c
 
         ${CMAKE_SOURCE_DIR}/wm/command-line.h
         ${CMAKE_SOURCE_DIR}/wm/command-line.c
+
+        ${CMAKE_SOURCE_DIR}/wm/get-mod-mask.h
+        ${CMAKE_SOURCE_DIR}/wm/get-mod-mask.c
 
         ${CMAKE_SOURCE_DIR}/wm/restore-layout.h
         ${CMAKE_SOURCE_DIR}/wm/restore-layout.c

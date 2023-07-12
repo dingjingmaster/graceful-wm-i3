@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "common/log.h"
+
 
 /* From sys/time.h, not sure if it’s available on all systems. */
 #define _i3_timercmp(a, b, CMP) \
@@ -82,8 +84,10 @@ void match_copy(Match *dest, Match *src) {
  * Check if a match data structure matches the given window.
  *
  */
-bool match_matches_window(Match *match, i3Window *window) {
-    LOG("Checking window 0x%08x (class %s)\n", window->id, window->class_class);
+bool match_matches_window(Match *match, i3Window *window)
+{
+
+    DEBUG ("Checking window 0x%08x (class %s)\n", window->id, window->class_class);
 
 #define GET_FIELD_str(field) (field)
 #define GET_FIELD_i3string(field) (i3string_as_utf8(field))
@@ -96,9 +100,9 @@ bool match_matches_window(Match *match, i3Window *window) {
             if (strcmp(match->match_field->pattern, "__focused__") == 0 &&                        \
                 focused && focused->window && focused->window->window_field &&                    \
                 strcmp(window_field_str, GET_FIELD_##type(focused->window->window_field)) == 0) { \
-                LOG("window " #match_field " matches focused window\n");                          \
+                DEBUG ("window " #match_field " matches focused window\n");                          \
             } else if (regex_matches(match->match_field, window_field_str)) {                     \
-                LOG("window " #match_field " matches (%s)\n", window_field_str);                  \
+                DEBUG ("window " #match_field " matches (%s)\n", window_field_str);                  \
             } else {                                                                              \
                 return false;                                                                     \
             }                                                                                     \
@@ -110,9 +114,9 @@ bool match_matches_window(Match *match, i3Window *window) {
 
     if (match->id != XCB_NONE) {
         if (window->id == match->id) {
-            LOG("match made by window id (%d)\n", window->id);
+            DEBUG ("match made by window id (%d)\n", window->id);
         } else {
-            LOG("window id does not match\n");
+            DEBUG ("window id does not match\n");
             return false;
         }
     }
@@ -122,7 +126,7 @@ bool match_matches_window(Match *match, i3Window *window) {
 
     if (match->window_type != UINT32_MAX) {
         if (window->window_type == match->window_type) {
-            LOG("window_type matches (%i)\n", match->window_type);
+            DEBUG ("window_type matches (%i)\n", match->window_type);
         } else {
             return false;
         }
@@ -143,7 +147,7 @@ bool match_matches_window(Match *match, i3Window *window) {
                 return false;
             }
         }
-        LOG("urgent matches latest\n");
+        DEBUG ("urgent matches latest\n");
     }
 
     if (match->urgent == U_OLDEST) {
@@ -159,7 +163,7 @@ bool match_matches_window(Match *match, i3Window *window) {
                 return false;
             }
         }
-        LOG("urgent matches oldest\n");
+        DEBUG ("urgent matches oldest\n");
     }
 
     if (match->workspace != NULL) {
@@ -172,9 +176,9 @@ bool match_matches_window(Match *match, i3Window *window) {
 
         if (strcmp(match->workspace->pattern, "__focused__") == 0 &&
             strcmp(ws->name, con_get_workspace(focused)->name) == 0) {
-            LOG("workspace matches focused workspace\n");
+            DEBUG ("workspace matches focused workspace\n");
         } else if (regex_matches(match->workspace, ws->name)) {
-            LOG("workspace matches (%s)\n", ws->name);
+            DEBUG ("workspace matches (%s)\n", ws->name);
         } else {
             return false;
         }
@@ -186,9 +190,9 @@ bool match_matches_window(Match *match, i3Window *window) {
             ((window->dock == W_DOCK_TOP || window->dock == W_DOCK_BOTTOM) &&
              match->dock == M_DOCK_ANY) ||
             (window->dock == W_NODOCK && match->dock == M_NODOCK)) {
-            LOG("dock status matches\n");
+            DEBUG ("dock status matches\n");
         } else {
-            LOG("dock status does not match\n");
+            DEBUG ("dock status does not match\n");
             return false;
         }
     }
@@ -207,9 +211,9 @@ bool match_matches_window(Match *match, i3Window *window) {
         }
 
         if (matched) {
-            LOG("mark matches\n");
+            DEBUG ("mark matches\n");
         } else {
-            LOG("mark does not match\n");
+            DEBUG ("mark does not match\n");
             return false;
         }
     }
@@ -254,7 +258,7 @@ bool match_matches_window(Match *match, i3Window *window) {
                 assert(false);
         }
 
-        LOG("window_mode matches\n");
+        DEBUG ("window_mode matches\n");
     }
 
     /* NOTE: See the comment regarding 'all' in match_parse_property()
@@ -286,7 +290,7 @@ void match_free(Match *match) {
  */
 void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     assert(match != NULL);
-    DLOG("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
+    DDEBUG ("ctype=*%s*, cvalue=*%s*\n", ctype, cvalue);
 
     if (strcmp(ctype, "class") == 0) {
         regex_free(match->class);
@@ -314,11 +318,11 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
 
         long parsed;
         if (!parse_long(cvalue, &parsed, 0)) {
-            ELOG("Could not parse con id \"%s\"\n", cvalue);
+            EDEBUG ("Could not parse con id \"%s\"\n", cvalue);
             match->error = sstrdup("invalid con_id");
         } else {
             match->con_id = (Con *)parsed;
-            DLOG("id as int = %p\n", match->con_id);
+            DDEBUG ("id as int = %p\n", match->con_id);
         }
         return;
     }
@@ -326,11 +330,11 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
     if (strcmp(ctype, "id") == 0) {
         long parsed;
         if (!parse_long(cvalue, &parsed, 0)) {
-            ELOG("Could not parse window id \"%s\"\n", cvalue);
+            EDEBUG ("Could not parse window id \"%s\"\n", cvalue);
             match->error = sstrdup("invalid id");
         } else {
             match->id = parsed;
-            DLOG("window id as int = %d\n", match->id);
+            DDEBUG ("window id as int = %d\n", match->id);
         }
         return;
     }
@@ -357,7 +361,7 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
         } else if (strcasecmp(cvalue, "notification") == 0) {
             match->window_type = A__NET_WM_WINDOW_TYPE_NOTIFICATION;
         } else {
-            ELOG("unknown window_type value \"%s\"\n", cvalue);
+            EDEBUG ("unknown window_type value \"%s\"\n", cvalue);
             match->error = sstrdup("unknown window_type value");
         }
 
@@ -450,5 +454,5 @@ void match_parse_property(Match *match, const char *ctype, const char *cvalue) {
         return;
     }
 
-    ELOG("Unknown criterion: %s\n", ctype);
+    DEBUG ("Unknown criterion: %s\n", ctype);
 }

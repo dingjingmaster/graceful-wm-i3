@@ -7,6 +7,7 @@
 #include <pcre2.h>
 #include <cairo.h>
 #include <stdint.h>
+#include <gmodule.h>
 #include <stdbool.h>
 #include <libsn/sn.h>
 #include <xcb/randr.h>
@@ -29,6 +30,7 @@ typedef struct xoutput          Output;
 typedef struct Binding          Binding;
 typedef struct Window           i3Window;
 typedef struct Assignment       Assignment;
+typedef struct AllConHead       AllConHead;
 
 
 
@@ -142,13 +144,23 @@ typedef enum {
     D_LEFT,
     D_RIGHT,
     D_UP,
-    D_DOWN } direction_t;
-typedef enum { NO_ORIENTATION = 0,
-    HORIZ,
-    VERT } orientation_t;
-typedef enum { BEFORE,
-    AFTER } position_t;
+    D_DOWN
+} direction_t;
+
 typedef enum {
+    NO_ORIENTATION = 0,
+    HORIZ,
+    VERT
+} orientation_t;
+
+typedef enum
+{
+    BEFORE,
+    AFTER
+} position_t;
+
+typedef enum
+{
     BS_NONE = 0,
     BS_PIXEL = 1,
     BS_NORMAL = 2,
@@ -156,39 +168,58 @@ typedef enum {
 
 /** parameter to specify whether tree_close_internal() and x_window_kill() should kill
  * only this specific window or the whole X11 client */
-typedef enum { DONT_KILL_WINDOW = 0,
+typedef enum
+{
+    DONT_KILL_WINDOW = 0,
     KILL_WINDOW = 1,
-    KILL_CLIENT = 2 } kill_window_t;
+    KILL_CLIENT = 2
+} kill_window_t;
 
 /** describes if the window is adjacent to the output (physical screen) edges. */
-typedef enum { ADJ_NONE = 0,
+typedef enum
+{
+    ADJ_NONE = 0,
     ADJ_LEFT_SCREEN_EDGE = (1 << 0),
     ADJ_RIGHT_SCREEN_EDGE = (1 << 1),
     ADJ_UPPER_SCREEN_EDGE = (1 << 2),
-    ADJ_LOWER_SCREEN_EDGE = (1 << 4) } adjacent_t;
+    ADJ_LOWER_SCREEN_EDGE = (1 << 4)
+} adjacent_t;
 
-typedef enum { SMART_BORDERS_OFF,
+typedef enum
+{
+    SMART_BORDERS_OFF,
     SMART_BORDERS_ON,
-    SMART_BORDERS_NO_GAPS } smart_borders_t;
+    SMART_BORDERS_NO_GAPS
+} smart_borders_t;
 
-typedef enum { SMART_GAPS_OFF,
+typedef enum
+{
+    SMART_GAPS_OFF,
     SMART_GAPS_ON,
-    SMART_GAPS_INVERSE_OUTER } smart_gaps_t;
+    SMART_GAPS_INVERSE_OUTER
+} smart_gaps_t;
 
-typedef enum { HEBM_NONE = ADJ_NONE,
+typedef enum
+{
+    HEBM_NONE = ADJ_NONE,
     HEBM_VERTICAL = ADJ_LEFT_SCREEN_EDGE | ADJ_RIGHT_SCREEN_EDGE,
     HEBM_HORIZONTAL = ADJ_UPPER_SCREEN_EDGE | ADJ_LOWER_SCREEN_EDGE,
     HEBM_BOTH = HEBM_VERTICAL | HEBM_HORIZONTAL,
     HEBM_SMART = (1 << 5),
-    HEBM_SMART_NO_GAPS = (1 << 6) } hide_edge_borders_mode_t;
+    HEBM_SMART_NO_GAPS = (1 << 6)
+} hide_edge_borders_mode_t;
 
-typedef enum { MM_REPLACE,
-    MM_ADD } mark_mode_t;
+typedef enum
+{
+    MM_REPLACE,
+    MM_ADD
+} mark_mode_t;
 
 /**
  * Container layouts. See Con::layout.
  */
-typedef enum {
+typedef enum
+{
     L_DEFAULT = 0,
     L_STACKED = 1,
     L_TABBED = 2,
@@ -201,7 +232,8 @@ typedef enum {
 /**
  * Binding input types. See Binding::input_type.
  */
-typedef enum {
+typedef enum
+{
     B_KEYBOARD = 0,
     B_MOUSE = 1
 } input_type_t;
@@ -209,7 +241,8 @@ typedef enum {
 /**
  * Bitmask for matching XCB_XKB_GROUP_1 to XCB_XKB_GROUP_4.
  */
-typedef enum {
+typedef enum
+{
     I3_XKB_GROUP_MASK_ANY = 0,
     I3_XKB_GROUP_MASK_1 = (1 << 0),
     I3_XKB_GROUP_MASK_2 = (1 << 1),
@@ -228,12 +261,14 @@ typedef uint32_t i3_event_state_mask_t;
 /**
  * Mouse pointer warping modes.
  */
-typedef enum {
+typedef enum
+{
     POINTER_WARPING_OUTPUT = 0,
     POINTER_WARPING_NONE = 1
 } warping_t;
 
-struct gaps_t {
+struct gaps_t
+{
     int inner;
     int top;
     int right;
@@ -241,7 +276,8 @@ struct gaps_t {
     int left;
 };
 
-typedef enum {
+typedef enum
+{
     GAPS_INNER = (1 << 0),
     GAPS_TOP = (1 << 1),
     GAPS_RIGHT = (1 << 2),
@@ -255,7 +291,8 @@ typedef enum {
 /**
  * Focus wrapping modes.
  */
-typedef enum {
+typedef enum
+{
     FOCUS_WRAPPING_OFF = 0,
     FOCUS_WRAPPING_ON = 1,
     FOCUS_WRAPPING_FORCE = 2,
@@ -272,7 +309,8 @@ typedef enum {
  * typecasts.
  *
  */
-struct Rect {
+struct Rect
+{
     uint32_t x;
     uint32_t y;
     uint32_t width;
@@ -284,7 +322,8 @@ struct Rect {
  * _NET_WM_STRUT_PARTIAL.
  *
  */
-struct reservedpx {
+struct reservedpx
+{
     uint32_t left;
     uint32_t right;
     uint32_t top;
@@ -296,7 +335,8 @@ struct reservedpx {
  * whether the rects width/height have changed.
  *
  */
-struct width_height {
+struct width_height
+{
     uint32_t w;
     uint32_t h;
 };
@@ -307,7 +347,8 @@ struct width_height {
  * not changed (only the pixmaps will be copied).
  *
  */
-struct deco_render_params {
+struct deco_render_params
+{
     struct Colortriple *color;
     int border_style;
     struct width_height con_rect;
@@ -322,7 +363,8 @@ struct deco_render_params {
  * Stores which workspace (by name or number) goes to which output and its gaps config.
  *
  */
-struct Workspace_Assignment {
+struct Workspace_Assignment
+{
     char *name;
     char *output;
     gaps_t gaps;
@@ -331,7 +373,8 @@ struct Workspace_Assignment {
     TAILQ_ENTRY(Workspace_Assignment) ws_assignments;
 };
 
-struct Ignore_Event {
+struct Ignore_Event
+{
     int sequence;
     int response_type;
     time_t added;
@@ -368,7 +411,8 @@ struct Startup_Sequence
  * non-matching pattern.
  *
  */
-struct regex {
+struct regex
+{
     char *pattern;
     pcre2_code *regex;
 };
@@ -378,7 +422,8 @@ struct regex {
  * be passed to xcb_grab_key().
  *
  */
-struct Binding_Keycode {
+struct Binding_Keycode
+{
     xcb_keycode_t keycode;
     i3_event_state_mask_t modifiers;
     TAILQ_ENTRY(Binding_Keycode) keycodes;
@@ -394,7 +439,8 @@ struct Binding_Keycode {
  * src/config_parser.c)
  *
  */
-struct Binding {
+struct Binding
+{
     /* The type of input this binding is for. (Mouse bindings are not yet
      * implemented. All bindings are currently assumed to be keyboard bindings.) */
     input_type_t input_type;
@@ -457,7 +503,8 @@ struct Binding {
  * in the config (see src/config.c)
  *
  */
-struct Autostart {
+struct Autostart
+{
     /** Command, like in command mode */
     char *command;
     /** no_startup_id flag for start_application(). Determines whether a
@@ -467,7 +514,8 @@ struct Autostart {
     TAILQ_ENTRY(Autostart) autostarts_always;
 };
 
-struct output_name {
+struct output_name
+{
     char *name;
     SLIST_ENTRY(output_name) names;
 };
@@ -479,7 +527,8 @@ struct output_name {
  * screen (except if you are running multiple screens in clone mode).
  *
  */
-struct xoutput {
+struct xoutput
+{
     /** Output id, so that we can requery the output directly later */
     xcb_randr_output_t id;
 
@@ -512,7 +561,8 @@ struct xoutput {
  * information (hints like _NET_WM_NAME for that window).
  *
  */
-struct Window {
+struct Window
+{
     xcb_window_t id;
 
     /** Holds the xcb_window_t (just an ID) for the leader window (logical
@@ -528,8 +578,7 @@ struct Window {
     char *class_class;
     char *class_instance;
 
-    /** The name of the window. */
-    i3String *name;
+    GString*                name;           // The name of window
 
     /** The WM_WINDOW_ROLE of this window (for example, the pidgin buddy window
      * sets "buddy list"). Useful to match specific windows in assignments or
@@ -667,7 +716,8 @@ struct mark_t {
  * A 'Con' represents everything from the X11 root window down to a single X11 window.
  *
  */
-struct Con {
+struct Con
+{
     bool mapped;
 
     /* Should this container be marked urgent? This gets set when the window
@@ -805,8 +855,8 @@ struct Con {
 
     TAILQ_ENTRY(Con) nodes;
     TAILQ_ENTRY(Con) focused;
-    TAILQ_ENTRY(Con) all_cons;
-    TAILQ_ENTRY(Con) floating_windows;
+    TAILQ_ENTRY(Con) allCons;
+    TAILQ_ENTRY(Con) floatingWindows;
 
     /** callbacks */
     void (*on_remove_child)(Con *);
@@ -833,6 +883,10 @@ struct Con {
     /* The colormap for this con if a custom one is used. */
     xcb_colormap_t colormap;
 };
+
+
+
+TAILQ_HEAD(AllConHead, Con);
 
 
 #endif //GRACEFUL_XF_WM_TYPES_H

@@ -1,14 +1,8 @@
-/*
- * vim:ts=4:sw=4:expandtab
- *
- * i3 - an improved dynamic tiling window manager
- * © 2009 Michael Stapelberg and contributors (see also: LICENSE)
- *
- * handlers.c: Small handlers for various events (keypresses, focus changes,
- *             …).
- *
- */
-#include "all.h"
+//
+// Created by dingjing on 23-7-12.
+//
+
+#include "handlers.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -17,15 +11,20 @@
 #define SN_API_NOT_YET_FROZEN 1
 #include <libsn/sn-monitor.h>
 
-int randr_base = -1;
-int xkb_base = -1;
+#include "utils.h"
+#include "config.h"
+
+
+int randr_base      = -1;
+int xkb_base        = -1;
+int shape_base      = -1;
 int xkb_current_group;
-int shape_base = -1;
+
 
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
    changing workspaces */
-static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
+//static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
 
 /*
  * Adds the given sequence to the list of events which are ignored.
@@ -35,21 +34,26 @@ static SLIST_HEAD(ignore_head, Ignore_Event) ignore_events;
  * Every ignored sequence number gets garbage collected after 5 seconds.
  *
  */
-void add_ignore_event(const int sequence, const int response_type) {
-    struct Ignore_Event *event = smalloc(sizeof(struct Ignore_Event));
+void add_ignore_event(const int sequence, const int response_type)
+{
+#if 0
+    struct Ignore_Event *event = smalloc (sizeof(struct Ignore_Event));
 
     event->sequence = sequence;
     event->response_type = response_type;
     event->added = time(NULL);
 
     SLIST_INSERT_HEAD(&ignore_events, event, ignore_events);
+#endif
 }
 
 /*
  * Checks if the given sequence is ignored and returns true if so.
  *
  */
-bool event_is_ignored(const int sequence, const int response_type) {
+bool event_is_ignored(const int sequence, const int response_type)
+{
+#if 0
     struct Ignore_Event *event;
     time_t now = time(NULL);
     for (event = SLIST_FIRST(&ignore_events); event != SLIST_END(&ignore_events);) {
@@ -75,6 +79,7 @@ bool event_is_ignored(const int sequence, const int response_type) {
          * are multiple enter_notifies for one configure_request, for example). */
         return true;
     }
+#endif
 
     return false;
 }
@@ -85,7 +90,9 @@ bool event_is_ignored(const int sequence, const int response_type) {
  * current workspace, if so.
  *
  */
-static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
+static void check_crossing_screen_boundary(uint32_t x, uint32_t y)
+{
+#if 0
     Output *output;
 
     /* If the user disable focus follows mouse, we have nothing to do here */
@@ -113,13 +120,16 @@ static void check_crossing_screen_boundary(uint32_t x, uint32_t y) {
     /* If the focus changed, we re-render to get updated decorations */
     if (old_focused != focused)
         tree_render();
+#endif
 }
 
 /*
  * When the user moves the mouse pointer onto a window, this callback gets called.
  *
  */
-static void handle_enter_notify(xcb_enter_notify_event_t *event) {
+static void handle_enter_notify(xcb_enter_notify_event_t *event)
+{
+#if 0
     Con *con;
 
     last_timestamp = event->time;
@@ -184,6 +194,7 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
     focused_id = XCB_NONE;
     con_focus(con_descend_focused(con));
     tree_render();
+#endif
 }
 
 /*
@@ -192,7 +203,9 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
  * and crossing virtual screen boundaries), this callback gets called.
  *
  */
-static void handle_motion_notify(xcb_motion_notify_event_t *event) {
+static void handle_motion_notify(xcb_motion_notify_event_t *event)
+{
+#if 0
     last_timestamp = event->time;
 
     /* Skip events where the pointer was over a child window, we are only
@@ -239,6 +252,7 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
             return;
         }
     }
+#endif
 }
 
 /*
@@ -246,7 +260,9 @@ static void handle_motion_notify(xcb_motion_notify_event_t *event) {
  * we need to update our key bindings then (re-translate symbols).
  *
  */
-static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
+static void handle_mapping_notify(xcb_mapping_notify_event_t *event)
+{
+#if 0
     if (event->request != XCB_MAPPING_KEYBOARD &&
         event->request != XCB_MAPPING_MODIFIER)
         return;
@@ -259,13 +275,16 @@ static void handle_mapping_notify(xcb_mapping_notify_event_t *event) {
     ungrab_all_keys(conn);
     translate_keysyms();
     grab_all_keys(conn);
+#endif
 }
 
 /*
  * A new window appeared on the screen (=was mapped), so let’s manage it.
  *
  */
-static void handle_map_request(xcb_map_request_event_t *event) {
+static void handle_map_request(xcb_map_request_event_t *event)
+{
+#if 0
     xcb_get_window_attributes_cookie_t cookie;
 
     cookie = xcb_get_window_attributes_unchecked(conn, event->window);
@@ -274,6 +293,7 @@ static void handle_map_request(xcb_map_request_event_t *event) {
     add_ignore_event(event->sequence, -1);
 
     manage_window(event->window, cookie, false);
+#endif
 }
 
 /*
@@ -284,7 +304,9 @@ static void handle_map_request(xcb_map_request_event_t *event) {
  * "new" position.
  *
  */
-static void handle_configure_request(xcb_configure_request_event_t *event) {
+static void handle_configure_request(xcb_configure_request_event_t *event)
+{
+#if 0
     Con *con;
 
     DLOG("window 0x%08x wants to be at %dx%d with %dx%d\n",
@@ -430,6 +452,7 @@ static void handle_configure_request(xcb_configure_request_event_t *event) {
 
 out:
     fake_absolute_configure_notify(con);
+#endif
 }
 
 /*
@@ -437,7 +460,9 @@ out:
  * changes the screen configuration in any way (mode, position, …)
  *
  */
-static void handle_screen_change(xcb_generic_event_t *e) {
+static void handle_screen_change(xcb_generic_event_t *e)
+{
+#if 0
     DLOG("RandR screen change\n");
 
     /* The geometry of the root window is used for “fullscreen global” and
@@ -458,6 +483,7 @@ static void handle_screen_change(xcb_generic_event_t *e) {
     scratchpad_fix_resolution();
 
     ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
+#endif
 }
 
 /*
@@ -465,7 +491,9 @@ static void handle_screen_change(xcb_generic_event_t *e) {
  * now, so we better clean up before.
  *
  */
-static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event) {
+static void handle_unmap_notify_event(xcb_unmap_notify_event_t *event)
+{
+#if 0
     DLOG("UnmapNotify for 0x%08x (received from 0x%08x), serial %d\n", event->window, event->event, event->sequence);
     xcb_get_input_focus_cookie_t cookie;
     Con *con = con_by_window_id(event->window);
@@ -525,6 +553,7 @@ ignore_end:
      * using GetInputFocus, subsequent (legitimate) EnterNotify events arrived
      * with the same sequence and thus were ignored (see ticket #609). */
     free(xcb_get_input_focus_reply(conn, cookie, NULL));
+#endif
 }
 
 /*
@@ -536,7 +565,9 @@ ignore_end:
  * important fields in the event data structure).
  *
  */
-static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
+static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event)
+{
+#if 0
     DLOG("destroy notify for 0x%08x, 0x%08x\n", event->event, event->window);
 
     xcb_unmap_notify_event_t unmap;
@@ -545,9 +576,12 @@ static void handle_destroy_notify_event(xcb_destroy_notify_event_t *event) {
     unmap.window = event->window;
 
     handle_unmap_notify_event(&unmap);
+#endif
 }
 
-static bool window_name_changed(i3Window *window, char *old_name) {
+static bool window_name_changed(void* /*i3Window*/ *window, char *old_name)
+{
+#if 0
     if ((old_name == NULL) && (window->name == NULL))
         return false;
 
@@ -556,13 +590,16 @@ static bool window_name_changed(i3Window *window, char *old_name) {
         return true;
 
     return (strcmp(old_name, i3string_as_utf8(window->name)) != 0);
+#endif
 }
 
 /*
  * Called when a window changes its title
  *
  */
-static bool handle_windowname_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_windowname_change(void* /*Con* */con, xcb_get_property_reply_t *prop)
+{
+#if 0
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
     window_update_name(con->window, prop);
@@ -575,7 +612,7 @@ static bool handle_windowname_change(Con *con, xcb_get_property_reply_t *prop) {
         ipc_send_window_event("title", con);
 
     FREE(old_name);
-
+#endif
     return true;
 }
 
@@ -584,7 +621,9 @@ static bool handle_windowname_change(Con *con, xcb_get_property_reply_t *prop) {
  * window_update_name_legacy().
  *
  */
-static bool handle_windowname_change_legacy(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_windowname_change_legacy(/*Con* */ void* con, xcb_get_property_reply_t *prop)
+{
+#if 0
     char *old_name = (con->window->name != NULL ? sstrdup(i3string_as_utf8(con->window->name)) : NULL);
 
     window_update_name_legacy(con->window, prop);
@@ -597,7 +636,7 @@ static bool handle_windowname_change_legacy(Con *con, xcb_get_property_reply_t *
         ipc_send_window_event("title", con);
 
     FREE(old_name);
-
+#endif
     return true;
 }
 
@@ -605,11 +644,13 @@ static bool handle_windowname_change_legacy(Con *con, xcb_get_property_reply_t *
  * Called when a window changes its WM_WINDOW_ROLE.
  *
  */
-static bool handle_windowrole_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_windowrole_change(/*Con* */ void* con, xcb_get_property_reply_t *prop)
+{
+#if 0
     window_update_role(con->window, prop);
 
     con = remanage_window(con);
-
+#endif
     return true;
 }
 
@@ -617,7 +658,9 @@ static bool handle_windowrole_change(Con *con, xcb_get_property_reply_t *prop) {
  * Expose event means we should redraw our windows (= title bar)
  *
  */
-static void handle_expose_event(xcb_expose_event_t *event) {
+static void handle_expose_event(xcb_expose_event_t *event)
+{
+#if 0
     Con *parent;
 
     DLOG("window = %08x\n", event->window);
@@ -632,6 +675,7 @@ static void handle_expose_event(xcb_expose_event_t *event) {
     draw_util_copy_surface(&(parent->frame_buffer), &(parent->frame),
                            0, 0, 0, 0, parent->rect.width, parent->rect.height);
     xcb_flush(conn);
+#endif
 }
 
 #define _NET_WM_MOVERESIZE_SIZE_TOPLEFT 0
@@ -656,7 +700,9 @@ static void handle_expose_event(xcb_expose_event_t *event) {
  * Handle client messages (EWMH)
  *
  */
-static void handle_client_message(xcb_client_message_event_t *event) {
+static void handle_client_message(xcb_client_message_event_t *event)
+{
+#if 0
     /* If this is a startup notification ClientMessage, the library will handle
      * it and call our monitor_event() callback. */
     if (sn_xcb_display_process_event(sndisplay, (xcb_generic_event_t *)event))
@@ -945,10 +991,14 @@ static void handle_client_message(xcb_client_message_event_t *event) {
     } else {
         DLOG("Skipping client message for unhandled type %d\n", event->type);
     }
+#endif
 }
 
-static bool handle_window_type(Con *con, xcb_get_property_reply_t *reply) {
+static bool handle_window_type(void* /*Con* */con, xcb_get_property_reply_t *reply)
+{
+#if 0
     window_update_type(con->window, reply);
+#endif
     return true;
 }
 
@@ -959,7 +1009,9 @@ static bool handle_window_type(Con *con, xcb_get_property_reply_t *reply) {
  * See ICCCM 4.1.2.3 for more details
  *
  */
-static bool handle_normal_hints(Con *con, xcb_get_property_reply_t *reply) {
+static bool handle_normal_hints(void* /*Con* */con, xcb_get_property_reply_t *reply)
+{
+#if 0
     bool changed = window_update_normal_hints(con->window, reply, NULL);
 
     if (changed) {
@@ -971,6 +1023,7 @@ static bool handle_normal_hints(Con *con, xcb_get_property_reply_t *reply) {
     }
 
     FREE(reply);
+#endif
     return true;
 }
 
@@ -978,11 +1031,14 @@ static bool handle_normal_hints(Con *con, xcb_get_property_reply_t *reply) {
  * Handles the WM_HINTS property for extracting the urgency state of the window.
  *
  */
-static bool handle_hints(Con *con, xcb_get_property_reply_t *reply) {
+static bool handle_hints(void* /*Con* */con, xcb_get_property_reply_t *reply)
+{
+#if 0
     bool urgency_hint;
     window_update_hints(con->window, reply, &urgency_hint);
     con_set_urgency(con, urgency_hint);
     tree_render();
+#endif
     return true;
 }
 
@@ -993,8 +1049,11 @@ static bool handle_hints(Con *con, xcb_get_property_reply_t *reply) {
  * See ICCCM 4.1.2.6 for more details
  *
  */
-static bool handle_transient_for(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_transient_for(void* /*Con* */con, xcb_get_property_reply_t *prop)
+{
+#if 0
     window_update_transient_for(con->window, prop);
+#endif
     return true;
 }
 
@@ -1003,8 +1062,11 @@ static bool handle_transient_for(Con *con, xcb_get_property_reply_t *prop) {
  * toolwindow (or similar) and to which window it belongs (logical parent).
  *
  */
-static bool handle_clientleader_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_clientleader_change(void* /*Con* */con, xcb_get_property_reply_t *prop)
+{
+#if 0
     window_update_leader(con->window, prop);
+#endif
     return true;
 }
 
@@ -1014,7 +1076,9 @@ static bool handle_clientleader_change(Con *con, xcb_get_property_reply_t *prop)
  * decorations accordingly.
  *
  */
-static void handle_focus_in(xcb_focus_in_event_t *event) {
+static void handle_focus_in(xcb_focus_in_event_t *event)
+{
+#if 0
     DLOG("focus change in, for window 0x%08x\n", event->event);
 
     if (event->event == root) {
@@ -1060,13 +1124,16 @@ static void handle_focus_in(xcb_focus_in_event_t *event) {
     /* We update focused_id because we don’t need to set focus again */
     focused_id = event->event;
     tree_render();
+#endif
 }
 
 /*
  * Log FocusOut events.
  *
  */
-static void handle_focus_out(xcb_focus_in_event_t *event) {
+static void handle_focus_out(xcb_focus_in_event_t *event)
+{
+#if 0
     Con *con = con_by_window_id(event->event);
     const char *window_name, *mode, *detail;
 
@@ -1130,6 +1197,7 @@ static void handle_focus_out(xcb_focus_in_event_t *event) {
     }
 
     DLOG("focus change out: window 0x%08x (con %p, %s) lost focus with detail=%s, mode=%s\n", event->event, con, window_name, detail, mode);
+#endif
 }
 
 /*
@@ -1137,7 +1205,9 @@ static void handle_focus_out(xcb_focus_in_event_t *event) {
  * the monitor configuration changed.
  *
  */
-static void handle_configure_notify(xcb_configure_notify_event_t *event) {
+static void handle_configure_notify(xcb_configure_notify_event_t *event)
+{
+#if 0
     if (event->event != root) {
         DLOG("ConfigureNotify for non-root window 0x%08x, ignoring\n", event->event);
         return;
@@ -1150,13 +1220,16 @@ static void handle_configure_notify(xcb_configure_notify_event_t *event) {
     randr_query_outputs();
 
     ipc_send_event("output", I3_IPC_EVENT_OUTPUT, "{\"change\":\"unspecified\"}");
+#endif
 }
 
 /*
  * Handles SelectionClear events for the root window, which are generated when
  * we lose ownership of a selection.
  */
-static void handle_selection_clear(xcb_selection_clear_event_t *event) {
+static void handle_selection_clear(xcb_selection_clear_event_t *event)
+{
+#if 0
     if (event->selection != wm_sn) {
         DLOG("SelectionClear for unknown selection %d, ignoring\n", event->selection);
         return;
@@ -1165,15 +1238,19 @@ static void handle_selection_clear(xcb_selection_clear_event_t *event) {
     exit(EXIT_SUCCESS);
 
     /* unreachable */
+#endif
 }
 
 /*
  * Handles the WM_CLASS property for assignments and criteria selection.
  *
  */
-static bool handle_class_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_class_change(void* /*Con**/ con, xcb_get_property_reply_t *prop)
+{
+#if 0
     window_update_class(con->window, prop);
     con = remanage_window(con);
+#endif
     return true;
 }
 
@@ -1181,9 +1258,12 @@ static bool handle_class_change(Con *con, xcb_get_property_reply_t *prop) {
  * Handles the WM_CLIENT_MACHINE property for assignments and criteria selection.
  *
  */
-static bool handle_machine_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_machine_change(void* /*Con* */con, xcb_get_property_reply_t *prop)
+{
+#if 0
     window_update_machine(con->window, prop);
     con = remanage_window(con);
+#endif
     return true;
 }
 
@@ -1191,7 +1271,9 @@ static bool handle_machine_change(Con *con, xcb_get_property_reply_t *prop) {
  * Handles the _MOTIF_WM_HINTS property of specifying window deocration settings.
  *
  */
-static bool handle_motif_hints_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_motif_hints_change(void* /*Con **/con, xcb_get_property_reply_t *prop)
+{
+#if 0
     border_style_t motif_border_style;
     bool has_mwm_hints = window_update_motif_hints(con->window, prop, &motif_border_style);
 
@@ -1201,7 +1283,7 @@ static bool handle_motif_hints_change(Con *con, xcb_get_property_reply_t *prop) 
 
         x_push_changes(croot);
     }
-
+#endif
     return true;
 }
 
@@ -1209,7 +1291,9 @@ static bool handle_motif_hints_change(Con *con, xcb_get_property_reply_t *prop) 
  * Handles the _NET_WM_STRUT_PARTIAL property for allocating space for dock clients.
  *
  */
-static bool handle_strut_partial_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_strut_partial_change(void* /*Con */con, xcb_get_property_reply_t *prop)
+{
+#if 0
     window_update_strut_partial(con->window, prop);
 
     /* we only handle this change for dock clients */
@@ -1254,6 +1338,7 @@ static bool handle_strut_partial_change(Con *con, xcb_get_property_reply_t *prop
 
     tree_render();
 
+#endif
     return true;
 }
 
@@ -1268,25 +1353,29 @@ static bool handle_strut_partial_change(Con *con, xcb_get_property_reply_t *prop
  * state for the original command.
  *
  */
-static bool handle_i3_floating(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_i3_floating(void* /*Con* */ con, xcb_get_property_reply_t *prop)
+{
+#if 0
     DLOG("floating change for con %p\n", con);
 
     remanage_window(con);
-
+#endif
     return true;
 }
 
-static bool handle_windowicon_change(Con *con, xcb_get_property_reply_t *prop) {
+static bool handle_windowicon_change(void* /*Con* */con, xcb_get_property_reply_t *prop)
+{
+#if 0
     window_update_icon(con->window, prop);
 
     x_push_changes(croot);
-
+#endif
     return true;
 }
 
 /* Returns false if the event could not be processed (e.g. the window could not
  * be found), true otherwise */
-typedef bool (*cb_property_handler_t)(Con *con, xcb_get_property_reply_t *property);
+typedef bool (*cb_property_handler_t)(void* /*Con* */con, xcb_get_property_reply_t *property);
 
 struct property_handler_t {
     xcb_atom_t atom;
@@ -1294,21 +1383,23 @@ struct property_handler_t {
     cb_property_handler_t cb;
 };
 
-static struct property_handler_t property_handlers[] = {
-    {0, 128, handle_windowname_change},
-    {0, UINT_MAX, handle_hints},
-    {0, 128, handle_windowname_change_legacy},
-    {0, UINT_MAX, handle_normal_hints},
-    {0, UINT_MAX, handle_clientleader_change},
-    {0, UINT_MAX, handle_transient_for},
-    {0, 128, handle_windowrole_change},
-    {0, 128, handle_class_change},
-    {0, UINT_MAX, handle_strut_partial_change},
-    {0, UINT_MAX, handle_window_type},
-    {0, UINT_MAX, handle_i3_floating},
-    {0, 128, handle_machine_change},
-    {0, 5 * sizeof(uint64_t), handle_motif_hints_change},
-    {0, UINT_MAX, handle_windowicon_change}};
+static struct property_handler_t property_handlers[] =
+    {
+        //{0, 128, handle_windowname_change},
+        //{0, UINT_MAX, handle_hints},
+        //{0, 128, handle_windowname_change_legacy},
+        //{0, UINT_MAX, handle_normal_hints},
+        //{0, UINT_MAX, handle_clientleader_change},
+        //{0, UINT_MAX, handle_transient_for},
+        //{0, 128, handle_windowrole_change},
+        //{0, 128, handle_class_change},
+        //{0, UINT_MAX, handle_strut_partial_change},
+        //{0, UINT_MAX, handle_window_type},
+        //{0, UINT_MAX, handle_i3_floating},
+        //{0, 128, handle_machine_change},
+        //{0, 5 * sizeof(uint64_t), handle_motif_hints_change}
+        //{0, UINT_MAX, handle_windowicon_change}
+    };
 #define NUM_HANDLERS (sizeof(property_handlers) / sizeof(struct property_handler_t))
 
 /*
@@ -1318,26 +1409,27 @@ static struct property_handler_t property_handlers[] = {
  */
 void property_handlers_init(void)
 {
-    sn_monitor_context_new(sndisplay, conn_screen, startup_monitor_event, NULL, NULL);
+    //sn_monitor_context_new(gSnDisplay, gConnScreen, startup_monitor_event, NULL, NULL);
 
-    property_handlers[0].atom = A__NET_WM_NAME;
+    //property_handlers[0].atom = A__NET_WM_NAME;
     property_handlers[1].atom = XCB_ATOM_WM_HINTS;
     property_handlers[2].atom = XCB_ATOM_WM_NAME;
     property_handlers[3].atom = XCB_ATOM_WM_NORMAL_HINTS;
-    property_handlers[4].atom = A_WM_CLIENT_LEADER;
+    //property_handlers[4].atom = A_WM_CLIENT_LEADER;
     property_handlers[5].atom = XCB_ATOM_WM_TRANSIENT_FOR;
-    property_handlers[6].atom = A_WM_WINDOW_ROLE;
+    //property_handlers[6].atom = A_WM_WINDOW_ROLE;
     property_handlers[7].atom = XCB_ATOM_WM_CLASS;
-    property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
-    property_handlers[9].atom = A__NET_WM_WINDOW_TYPE;
-    property_handlers[10].atom = A_I3_FLOATING_WINDOW;
+    //property_handlers[8].atom = A__NET_WM_STRUT_PARTIAL;
+    //property_handlers[9].atom = A__NET_WM_WINDOW_TYPE;
+    //property_handlers[10].atom = A_I3_FLOATING_WINDOW;
     property_handlers[11].atom = XCB_ATOM_WM_CLIENT_MACHINE;
-    property_handlers[12].atom = A__MOTIF_WM_HINTS;
-    property_handlers[13].atom = A__NET_WM_ICON;
+    //property_handlers[12].atom = A__MOTIF_WM_HINTS;
+    //property_handlers[13].atom = A__NET_WM_ICON;
 }
 
 static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
 {
+#if 0
     struct property_handler_t *handler = NULL;
     xcb_get_property_reply_t *propr = NULL;
     xcb_generic_error_t *err = NULL;
@@ -1374,6 +1466,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
     /* the handler will free() the reply unless it returns false */
     if (!handler->cb(con, propr))
         FREE(propr);
+#endif
 }
 
 /*
@@ -1383,6 +1476,7 @@ static void property_notify(uint8_t state, xcb_window_t window, xcb_atom_t atom)
  */
 void handle_event(int type, xcb_generic_event_t *event)
 {
+#if 0
     if (type != XCB_MOTION_NOTIFY)
         DLOG("event type %d, xkb_base %d\n", type, xkb_base);
 
@@ -1485,24 +1579,24 @@ void handle_event(int type, xcb_generic_event_t *event)
             handle_motion_notify((xcb_motion_notify_event_t *)event);
             break;
 
-        /* Enter window = user moved their mouse over the window */
+            /* Enter window = user moved their mouse over the window */
         case XCB_ENTER_NOTIFY:
             handle_enter_notify((xcb_enter_notify_event_t *)event);
             break;
 
-        /* Client message are sent to the root window. The only interesting
-         * client message for us is _NET_WM_STATE, we honour
-         * _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION */
+            /* Client message are sent to the root window. The only interesting
+             * client message for us is _NET_WM_STATE, we honour
+             * _NET_WM_STATE_FULLSCREEN and _NET_WM_STATE_DEMANDS_ATTENTION */
         case XCB_CLIENT_MESSAGE:
             handle_client_message((xcb_client_message_event_t *)event);
             break;
 
-        /* Configure request = window tried to change size on its own */
+            /* Configure request = window tried to change size on its own */
         case XCB_CONFIGURE_REQUEST:
             handle_configure_request((xcb_configure_request_event_t *)event);
             break;
 
-        /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
+            /* Mapping notify = keyboard mapping changed (Xmodmap), re-grab bindings */
         case XCB_MAPPING_NOTIFY:
             handle_mapping_notify((xcb_mapping_notify_event_t *)event);
             break;
@@ -1534,4 +1628,5 @@ void handle_event(int type, xcb_generic_event_t *event)
             /* DLOG("Unhandled event of type %d\n", type); */
             break;
     }
+#endif
 }
